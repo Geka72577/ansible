@@ -1,6 +1,7 @@
 ---
- - hosts: all
- - become: yes
+ - name: Print debug information
+   hosts: all
+   become: yes
 
    tasks:
 
