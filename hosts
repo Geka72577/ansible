@@ -1,0 +1,9 @@
+[centos]
+centos8 ansible_host=10.7.1.121 ansible_user=root  #ansible_python_interpreter=/usr/bin/python3.5
+centos75 ansible_host=10.7.1.122 ansible_user=root
+centos77 ansible_host=10.7.1.123 ansible_user=root
+centos76 ansible_host=10.7.1.124 ansible_user=root
+linux_ubuntu ansible_host=10.7.1.132 ansible_root=root 
+linux_ubuntu16 ansible_host=10.7.1.133 ansible_root=root  ansible_python_interpreter=/usr/bin/python3.5
+linux_ubuntu18 ansible_host=10.7.1.134 ansible_root=root ansible_python_interpreter=/usr/bin/python3.6
+linux_ubuntu14 ansible_host=10.7.1.135 ansible_root=root

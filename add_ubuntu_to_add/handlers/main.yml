@@ -1,0 +1,11 @@
+---
+# handlers file for add_ubuntu_16_04_to_add
+  - name: restart sshd
+    service:
+     name: ssh
+     state: restarted
+
+  - name: restart sssd
+    service:
+     name: sssd
+     state: restarted

@@ -1,0 +1,9 @@
+---
+# defaults file for add_centos7_to_ad
+
+     package_for_install:
+      - sssd
+      - realmd
+      - krb5-workstation
+      - samba-common-tools
+

@@ -1,0 +1,10 @@
+---
+# defaults file for add_ubuntu_16_04_to_add
+     package_for_install_ubuntu:
+      - sssd
+      - realmd
+      - krb5-user
+      - samba-common
+      - packagekit
+      - adcli
+

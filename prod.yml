@@ -1,0 +1,22 @@
+---
+- name: Add Linux hosts to Active Directory
+  hosts: all
+  become: yes
+  vars:
+    DNS1: 10.7.1.10
+#    DNS2: 10.7.1.10
+    user_ad: Administrator
+    domain_ad: kstt.internal
+    DOMAIN_AD: KSTT.INTERNAL
+    ad_access_filter: ad_access_filter = (memberOf=cn=sl2,ou=groups,ou=prod,dc=kstt,dc=internal)
+    group_ad: '%domain\ admins ALL=(ALL) ALL'
+    user_ad_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          62313539633830343437303433363631383761326363636538616464386632656263373239303063
+          3535383363613234653362306232326332313636613761640a383236383937646432363863666436
+          62326162323865333939333636336263666563616536346137323234623535663238373665626230
+          3735316335356430610a326532386631326530393266373666326330303865393338626333343236
+          3035
+  roles:
+     - { role: add_centos7_to_ad, when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7" }
+     - {role: add_ubuntu_to_add, when: ansible_distribution == "Ubuntu" and ansible_distribution_version != "12.04"}
