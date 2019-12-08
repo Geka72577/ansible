@@ -4,8 +4,93 @@
     apt:
      name: "{{ item }}"
      state: present
+     update_cache: yes
     loop: "{{package_for_install_ubuntu}}"
 
+  - name: Find name of network interface
+    shell: "ip -o link show | awk -F': ' '{print $2}' | grep -i ^e | head -1"
+    register: output_ubuntu_interface
+
+  - block:
+
+    - name: Ensure that DNS1 and DNS2 set in dhclient.conf file
+      lineinfile:
+       path: /etc/dhcp/dhclient.conf
+       regexp: 'supersede domain-name'
+       line: 'supersede domain-name-servers {{ DNS1 }}, {{ DNS2 }};'
+      register: output_ubuntu_dns12
+      when: (DNS1 is defined) and (DNS2 is defined)
+      ignore_errors: yes
+    
+    - name: Ensure that DNS1 set in dhclient.conf file 
+      lineinfile:
+       path: /etc/dhcp/dhclient.conf
+       regexp: 'supersede domain-name'
+       line: 'supersede domain-name-servers {{ DNS1 }};'
+      register: output_ubuntu_dns1
+      when: (DNS1 is defined) and (output_ubuntu_dns12.changed == false) and (DNS2 is undefined)
+      ignore_errors: yes
+
+    - name: Ensure that DNS2 set in dhclient.conf file
+      lineinfile:
+       path: /etc/dhcp/dhclient.conf
+       regexp: 'supersede domain-name'
+       line: 'supersede domain-name-servers {{ DNS2 }};'
+      register: output_ubuntu_dns2
+      when: (DNS2 is defined) and (output_ubuntu_dns1.changed == false) and (DNS1 is undefined )
+      ignore_errors: yes 
+
+    - name: restart network interface
+      shell: "ifdown {{ output_ubuntu_interface.stdout }} && ifup {{ output_ubuntu_interface.stdout }}"
+      when: output_ubuntu_dns12.changed == true or output_ubuntu_dns1.changed == true or output_ubuntu_dns2.changed == true
+    when: ansible_distribution_version == "16.04" or  ansible_distribution_version == "14.04"
+  
+  - block:
+    
+    - name: Upgrade netplan.io package to the latest version on Ubuntu 18.04
+      apt:
+       name: netplan.io
+       state: latest
+       update_cache: yes
+
+    - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS1 and DNS2
+      template:
+        src: 99-custom-dns.yaml
+        dest: /etc/netplan/99-custom-dns.yaml
+        owner: root
+        group: root
+        mode: '0644'
+        follow: yes  
+      register: output_ubuntu18_dns12
+      when: (DNS1 is defined) and (DNS2 is defined)
+
+    - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS1
+      template:
+        src: 99-custom-dns.yaml_dns1
+        dest: /etc/netplan/99-custom-dns.yaml
+        owner: root
+        group: root
+        mode: '0644'
+        follow: yes
+      register: output_ubuntu18_dns1
+      when: (DNS1 is defined) and (output_ubuntu18_dns12.changed == false) and (DNS2 is undefined)
+
+    - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS2
+      template:
+        src: 99-custom-dns.yaml_dns2
+        dest: /etc/netplan/99-custom-dns.yaml
+        owner: root
+        group: root
+        mode: '0644'
+        follow: yes
+      register: output_ubuntu18_dns2
+      when: (DNS2 is defined) and (output_ubuntu18_dns1.changed == false) and (DNS1 is undefined)
+
+    - name: Apply the changes in network for Ubuntu 18.04
+      command: netplan  apply
+      when: (output_ubuntu18_dns12.changed == true) or (output_ubuntu18_dns1.changed == true) or (output_ubuntu18_dns2.changed == true)
+    when: ansible_distribution_version == "18.04"
+ 
   - name: Check if the instance in the Active Directory
     command: id {{ user_ad }}@{{ domain_ad }}
     register: result
@@ -32,6 +117,11 @@
   
     when: result.rc != 0
   
+  - name: Check if SSH service to allow password authentication
+    command: grep ^'PasswordAuthentication[[:blank:]]*yes' /etc/ssh/sshd_config
+    register: result_ssh
+    ignore_errors: yes
+
   - name: Set the SSH service to allow password authentication
     replace:
      path: '/etc/ssh/sshd_config'
