@@ -60,11 +60,10 @@
     ignore_errors: yes
 
   - name: Set the SSH service to allow password authentication
-    replace:
+    lineinfile:
      path: '/etc/ssh/sshd_config'
-     regexp: '^#PasswordAuthentication yes'
-     replace:  'PasswordAuthentication  yes'
-     backup: yes
+     regexp: '^PasswordAuthentication'
+     line:  'PasswordAuthentication yes'
     notify: 'Restart service sshd'
     when: result_ssh.rc != 0
 

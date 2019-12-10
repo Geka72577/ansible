@@ -55,7 +55,7 @@
 
     - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS1 and DNS2
       template:
-        src: 99-custom-dns.yaml
+        src: dns/99-custom-dns.yaml
         dest: /etc/netplan/99-custom-dns.yaml
         owner: root
         group: root
@@ -66,7 +66,7 @@
 
     - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS1
       template:
-        src: 99-custom-dns.yaml_dns1
+        src: dns/99-custom-dns.yaml_dns1
         dest: /etc/netplan/99-custom-dns.yaml
         owner: root
         group: root
@@ -77,7 +77,7 @@
 
     - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS2
       template:
-        src: 99-custom-dns.yaml_dns2
+        src: dns/99-custom-dns.yaml_dns2
         dest: /etc/netplan/99-custom-dns.yaml
         owner: root
         group: root
@@ -95,41 +95,79 @@
     command: id {{ user_ad }}@{{ domain_ad }}
     register: result
     ignore_errors: yes
-
+  
   - block:
 
-    - name: Generate settings for krb.conf
+    - name: Generate settings for krb.conf, Ubuntu 14.04
       template:
-        src: krb5.j2
+        src: krb/krb5_ubuntu14.j2
         dest: /etc/krb5.conf
         owner: root
         group: root
         mode: '0644'
         follow: yes
 
-    - name: Join the instance to the Active Directory
+    - name: Join the instance to the Active Directory, Ubuntu 14.04
       shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
       register: output
 
     - name: Result of joining
       debug:
         var: output.stderr
-  
-    when: result.rc != 0
-  
+    when: ansible_distribution_version == "14.04" and result.rc != 0
+
+  - block:
+
+    - name: Generate settings for krb.conf, Ubuntu 16.04
+      template:
+        src: krb/krb5_ubuntu16.j2
+        dest: /etc/krb5.conf
+        owner: root
+        group: root
+        mode: '0644'
+        follow: yes
+
+    - name: Join the instance to the Active Directory, Ubuntu 16.04
+      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
+      register: output
+
+    - name: Result of joining
+      debug:
+        var: output.stderr
+    when: ansible_distribution_version == "16.04" and result.rc != 0
+
+  - block:
+
+    - name: Generate settings for krb.conf, Ubuntu 18.04
+      template:
+        src: krb/krb5_ubuntu18.j2
+        dest: /etc/krb5.conf
+        owner: root
+        group: root
+        mode: '0644'
+        follow: yes
+
+    - name: Join the instance to the Active Directory, Ubuntu 18.04
+      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
+      register: output
+
+    - name: Result of joining
+      debug:
+        var: output.stderr
+    when: ansible_distribution_version == "18.04" and result.rc != 0
+ 
   - name: Check if SSH service to allow password authentication
     command: grep ^'PasswordAuthentication[[:blank:]]*yes' /etc/ssh/sshd_config
-    register: result_ssh
+    register: result_ubuntu_ssh
     ignore_errors: yes
-
+  
   - name: Set the SSH service to allow password authentication
-    replace:
+    lineinfile:
      path: '/etc/ssh/sshd_config'
-     regexp: '^#PasswordAuthentication yes'
-     replace:  'PasswordAuthentication  yes'
-     backup: yes
+     regexp: '^PasswordAuthentication'
+     line:  'PasswordAuthentication yes'
     notify: 'restart sshd'
-    when: result_ssh.rc != 0
+    when: result_ubuntu_ssh.rc != 0
 
   - name: Change variable in sssd file
     lineinfile:
