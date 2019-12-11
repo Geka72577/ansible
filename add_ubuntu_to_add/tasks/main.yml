@@ -12,7 +12,6 @@
     register: output_ubuntu_interface
 
   - block:
-
     - name: Ensure that DNS1 and DNS2 set in dhclient.conf file
       lineinfile:
        path: /etc/dhcp/dhclient.conf
@@ -46,7 +45,6 @@
     when: ansible_distribution_version == "16.04" or  ansible_distribution_version == "14.04"
   
   - block:
-    
     - name: Upgrade netplan.io package to the latest version on Ubuntu 18.04
       apt:
        name: netplan.io
@@ -97,7 +95,6 @@
     ignore_errors: yes
   
   - block:
-
     - name: Generate settings for krb.conf, Ubuntu 14.04
       template:
         src: krb/krb5_ubuntu14.j2
@@ -106,18 +103,8 @@
         group: root
         mode: '0644'
         follow: yes
-
-    - name: Join the instance to the Active Directory, Ubuntu 14.04
-      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
-      register: output
-
-    - name: Result of joining
-      debug:
-        var: output.stderr
-    when: ansible_distribution_version == "14.04" and result.rc != 0
-
-  - block:
-
+      when: ansible_distribution_version == "14.04"
+        
     - name: Generate settings for krb.conf, Ubuntu 16.04
       template:
         src: krb/krb5_ubuntu16.j2
@@ -126,18 +113,8 @@
         group: root
         mode: '0644'
         follow: yes
-
-    - name: Join the instance to the Active Directory, Ubuntu 16.04
-      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
-      register: output
-
-    - name: Result of joining
-      debug:
-        var: output.stderr
-    when: ansible_distribution_version == "16.04" and result.rc != 0
-
-  - block:
-
+      when: ansible_distribution_version == "16.04"
+        
     - name: Generate settings for krb.conf, Ubuntu 18.04
       template:
         src: krb/krb5_ubuntu18.j2
@@ -146,15 +123,30 @@
         group: root
         mode: '0644'
         follow: yes
-
-    - name: Join the instance to the Active Directory, Ubuntu 18.04
+      when: ansible_distribution_version == "18.04"
+        
+    - name: Join the instance to the Active Directory
       shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
       register: output
 
     - name: Result of joining
       debug:
         var: output.stderr
-    when: ansible_distribution_version == "18.04" and result.rc != 0
+
+    - name: Generate SSSD file for Ubuntu
+      template:
+        src: sssd/sssd_ubuntu.j2
+        dest: /etc/sssd/sssd.conf
+        owner: root
+        group: root
+        mode: '0600'
+        follow: yes
+
+    - name: restart sssd
+      service:
+        name: sssd
+        state: restarted
+    when: result.rc != 0
  
   - name: Check if SSH service to allow password authentication
     command: grep ^'PasswordAuthentication[[:blank:]]*yes' /etc/ssh/sshd_config
@@ -168,27 +160,6 @@
      line:  'PasswordAuthentication yes'
     notify: 'restart sshd'
     when: result_ubuntu_ssh.rc != 0
-
-  - name: Change variable in sssd file
-    lineinfile:
-     dest: '/etc/sssd/sssd.conf'
-     regexp: '^use_fully_qualified_names '
-     line:  'use_fully_qualified_names = False'
-    notify: 'restart sssd'
-
-  - name: Change variable in sssd file
-    lineinfile:
-     dest: '/etc/sssd/sssd.conf'
-     regexp: '^use_fully_qualified_names '
-     line:  'use_fully_qualified_names = False'
-    notify: 'restart sssd'
-
-  - name: Specify in sssd file who may login
-    lineinfile:
-     path: '/etc/sssd/sssd.conf'
-     state: present
-     line:  "{{ ad_access_filter }}"
-    notify: 'restart sssd'
 
   - name: Add comment to sudoers file and  validate with saving
     lineinfile:

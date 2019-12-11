@@ -4,8 +4,3 @@
     service:
      name: ssh
      state: restarted
-
-  - name: restart sssd
-    service:
-     name: sssd
-     state: restarted

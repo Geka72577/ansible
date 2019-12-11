@@ -44,7 +44,6 @@
     ignore_errors: yes
    
   - block:
-
     - name: Join the instance to the Active Directory
       shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ domain_ad }} {{ domain_ad }}  --verbose
       register: output
@@ -52,10 +51,24 @@
     - name: "Result of joining"
       debug:
         var: output.stderr
+
+    - name: Generate SSSD file for Centos
+      template:
+        src: sssd_centos.j2
+        dest: /etc/sssd/sssd.conf
+        owner: root
+        group: root
+        mode: '0600'
+        follow: yes
+
+    - name: restart sssd
+      service:
+        name: sssd
+        state: restarted
     when: result.rc != 0
 
   - name: Check if SSH service to allow password authentication
-    command: grep ^'PasswordAuthentication[[:blank:]]*yes' /etc/ssh/sshd_config
+    command: grep '^PasswordAuthentication[[:blank:]]*yes' /etc/ssh/sshd_config
     register: result_ssh
     ignore_errors: yes
 
@@ -66,20 +79,6 @@
      line:  'PasswordAuthentication yes'
     notify: 'Restart service sshd'
     when: result_ssh.rc != 0
-
-  - name: Change variable in sssd file
-    lineinfile:
-     dest: '/etc/sssd/sssd.conf'
-     regexp: '^use_fully_qualified_names '
-     line:  'use_fully_qualified_names = False'
-    notify: 'Restart service sssd'
-
-  - name: Specify in sssd file who may login
-    lineinfile:
-     path: '/etc/sssd/sssd.conf'
-     state: present
-     line:  "{{ ad_access_filter }}"
-    notify: 'Restart service sssd'
 
   - name: Add comment to sudoers file and  validate with saving
     lineinfile:

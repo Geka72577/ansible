@@ -5,8 +5,3 @@
      name: sshd
      state: restarted
 
-  - name: Restart service sssd
-    service:
-     name: sssd
-     state: restarted
-
