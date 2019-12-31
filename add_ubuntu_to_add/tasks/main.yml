@@ -58,7 +58,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes  
+        force: yes  
       register: output_ubuntu18_dns12
       when: (DNS1 is defined) and (DNS2 is defined)
 
@@ -69,7 +69,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes
+        force: yes
       register: output_ubuntu18_dns1
       when: (DNS1 is defined) and (output_ubuntu18_dns12.changed == false) and (DNS2 is undefined)
 
@@ -80,7 +80,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes
+        force: yes
       register: output_ubuntu18_dns2
       when: (DNS2 is defined) and (output_ubuntu18_dns1.changed == false) and (DNS1 is undefined)
 
@@ -102,7 +102,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes
+        force: yes
       when: ansible_distribution_version == "14.04"
         
     - name: Generate settings for krb.conf, Ubuntu 16.04
@@ -112,7 +112,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes
+        force: yes
       when: ansible_distribution_version == "16.04"
         
     - name: Generate settings for krb.conf, Ubuntu 18.04
@@ -122,7 +122,7 @@
         owner: root
         group: root
         mode: '0644'
-        follow: yes
+        force: yes
       when: ansible_distribution_version == "18.04"
         
     - name: Join the instance to the Active Directory
@@ -140,7 +140,7 @@
         owner: root
         group: root
         mode: '0600'
-        follow: yes
+        force: yes
 
     - name: restart sssd
       service:

@@ -86,7 +86,7 @@
         owner: root
         group: root
         mode: '0600'
-        follow: yes
+        force: yes
 
     - name: restart sssd
       service:
