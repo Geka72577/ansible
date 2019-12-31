@@ -126,7 +126,7 @@
       when: ansible_distribution_version == "18.04"
         
     - name: Join the instance to the Active Directory
-      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
+      shell: echo '{{ user_ad_password }}' | realm join -U {{ user_ad }}@{{ DOMAIN_AD }} {{ domain_ad }} --verbose
       register: output
 
     - name: Result of joining
@@ -165,7 +165,7 @@
     lineinfile:
       path: /etc/sudoers
       state: present
-      line: '## Add the "AWS Delegated Administrators" group from the example.com domain.'
+      line: '## Add the "AWS Delegated Administrators" group from the {{ group_ad }} domain.'
       validate: /usr/sbin/visudo -cf %s
 
   - name: Add permissions for AD users and validate savings

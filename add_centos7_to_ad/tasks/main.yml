@@ -29,28 +29,31 @@
     when: DNS2 is defined
   
   - name: Ensure that DNS1 and DNS2 set in dhclient.conf file
-      lineinfile:
+    lineinfile:
        path: /etc/dhcp/dhclient.conf
        regexp: 'supersede domain-name'
        line: 'supersede domain-name-servers {{ DNS1 }}, {{ DNS2 }};'
-      register: output_centos_dns12
-      when: (DNS1 is defined) and (DNS2 is defined)
+    register: output_centos_dns12
+    when: (DNS1 is defined) and (DNS2 is defined)
+    ignore_errors: yes
 
-   - name: Ensure that DNS1 set in dhclient.conf file
-     lineinfile:
-      path: /etc/dhcp/dhclient.conf
-      regexp: 'supersede domain-name'
-      line: 'supersede domain-name-servers {{ DNS1 }};'
-     register: output_centos_dns1
-     when: (DNS1 is defined) and (output_centos_dns12.changed == false) and (DNS2 is undefined)
+  - name: Ensure that DNS1 set in dhclient.conf file
+    lineinfile:
+     path: /etc/dhcp/dhclient.conf
+     regexp: 'supersede domain-name'
+     line: 'supersede domain-name-servers {{ DNS1 }};'
+    register: output_centos_dns1
+    when: (DNS1 is defined) and (output_centos_dns12.changed == false) and (DNS2 is undefined)
+    ignore_errors: yes
 
-   - name: Ensure that DNS2 set in dhclient.conf file
-     lineinfile:
-      path: /etc/dhcp/dhclient.conf
-      regexp: 'supersede domain-name'
-      line: 'supersede domain-name-servers {{ DNS2 }};'
-     register: output_centos_dns2
-     when: (DNS2 is defined) and (output_centos_dns1.changed == false) and (DNS1 is undefined )
+  - name: Ensure that DNS2 set in dhclient.conf file
+    lineinfile:
+     path: /etc/dhcp/dhclient.conf
+     regexp: 'supersede domain-name'
+     line: 'supersede domain-name-servers {{ DNS2 }};'
+    register: output_centos_dns2
+    when: (DNS2 is defined) and (output_centos_dns1.changed == false) and (DNS1 is undefined )
+    ignore_errors: yes
 
   - name: restart network interface
     service:
@@ -69,7 +72,7 @@
    
   - block:
     - name: Join the instance to the Active Directory
-      shell: echo {{ user_ad_password }} | realm join -U {{ user_ad }}@{{ domain_ad }} {{ domain_ad }}  --verbose
+      shell: echo '{{ user_ad_password }}' | realm join -U {{ user_ad }}@{{ domain_ad }} {{ domain_ad }}  --verbose
       register: output
 
     - name: "Result of joining"
@@ -108,7 +111,7 @@
     lineinfile:
       path: /etc/sudoers
       state: present
-      line: '## Add the "AWS Delegated Administrators" group from the example.com domain.'
+      line: '## Add the "AWS Delegated Administrators" group from the {{ domain_ad }} domain.'
       validate: /usr/sbin/visudo -cf %s
 
   - name: Add permissions for AD users and validate savings

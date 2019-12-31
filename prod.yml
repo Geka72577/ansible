@@ -4,7 +4,7 @@
   become: yes
   vars:
     DNS1: 10.7.1.10
-#    DNS2: 10.7.1.10
+    DNS2: 10.7.1.10
     user_ad: Administrator
     domain_ad: kstt.internal
     DOMAIN_AD: KSTT.INTERNAL
