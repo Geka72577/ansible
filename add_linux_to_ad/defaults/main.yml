@@ -12,15 +12,15 @@ user_ad_password: !vault |
 #Variables for Prod hosts
 DNS1_prod: 10.7.1.10
 DNS2_prod: 10.7.1.10
-domain_ad_prod: kstt.internal
+domain_ad_prod: 
 ad_access_filter_prod: ad_access_filter = (memberOf=cn=sl2,ou=groups,ou=prod,dc=kstt,dc=internal)
 group_ad_prod: '%domain\ admins ALL=(ALL) ALL'
 
 #Variables for RND hosts
 DNS1_qa: 10.7.1.10
 DNS2_qa: 10.7.1.10
-domain_ad_qa: kstt.internal
-ad_access_filter_qa: ad_access_filter = (memberOf=cn=sl2,ou=groups,ou=prod,dc=kstt,dc=internal)
+domain_ad_qa: 
+ad_access_filter_qa: ad_access_filter = (memberOf=cn=sl2,ou=groups,ou=prod,dc=,dc=)
 group_ad_qa: '%domain\ admins ALL=(ALL) ALL'
 
 #Variable for environment
