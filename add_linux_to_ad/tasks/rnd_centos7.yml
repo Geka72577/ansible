@@ -1,0 +1,85 @@
+- name: Ensure that DNS1_qa and DNS2_qa set in dhclient.conf file
+  lineinfile:
+    path: /etc/dhcp/dhclient.conf
+    regexp: 'supersede domain-name'
+    line: 'supersede domain-name-servers {{ DNS1_qa }}, {{ DNS2_qa }};'
+    state: present
+  when: (DNS1_qa is defined) and (DNS2_qa is defined)
+  notify: 
+    - Restart network centos
+
+- name: Ensure that the variable PEERDNS set in "yes"
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+    regexp: '^PEERDNS'
+    line: PEERDNS=yes
+    state: present
+  notify: 
+    - Restart network centos
+  
+- name: install packages
+  yum:
+    name: ['sssd', 'realmd', 'krb5-workstation', 'samba-common-tools']
+    state: present
+ 
+- name: Check if the instance in rnd Active Directory
+  command: id {{ user_ad }}@{{ domain_ad_qa }}
+  register: result
+  ignore_errors: yes
+
+- block:
+  - name: Join the instance to the rnd Active Directory
+    shell: echo '{{ user_ad_password }}' | realm join -U {{ user_ad }}@{{ domain_ad_qa }} {{ domain_ad_qa }}  --verbose
+    register: output
+
+  - name: "Result of joining"
+    debug:
+      var: output.stderr
+
+  - name: Generate SSSD file for Centos
+    template:
+      src: sssd_centos_qa.j2
+      dest: /etc/sssd/sssd.conf
+      owner: root
+      group: root
+      mode: '0600'
+      force: yes
+    notify: 
+      - Restart sssd centos
+  when: result.rc != 0
+
+- name: Set the PasswordAuthentication setting to yes in ssh config
+  lineinfile:
+    path: '/etc/ssh/sshd_config'
+    regexp: '^PasswordAuthentication'
+    line:  'PasswordAuthentication yes'
+    state: present
+  notify: 
+    - Restart service sshd
+
+- name: Add comment to sudoers file and  validate with saving
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    line: '## Add the "AWS Delegated Administrators" group from the {{ domain_ad_qa }} domain.'
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Add permissions for AD users and validate savings
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    line: "{{ group_ad_qa }}"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Check if the host was added to AD
+  command: id {{ user_ad }}@{{ domain_ad_qa }}
+  register: finish_result
+  ignore_errors: yes
+
+- debug:
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} was added to rnd AD successfully"
+  when: finish_result.rc == 0
+
+- debug:
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} wasn't added to rnd AD successfully"
+  when: finish_result.rc != 0

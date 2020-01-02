@@ -1,12 +1,12 @@
 
 [sssd]
-domains = {{ domain_ad }}
+domains = {{ domain_ad_prod }}
 config_file_version = 2
 services = nss, pam
 
-[domain/{{ domain_ad }}]
-ad_domain = {{ domain_ad }}
-krb5_realm = {{ DOMAIN_AD }}
+[domain/{{ domain_ad_prod }}]
+ad_domain = {{ domain_ad_prod }}
+krb5_realm = {{ domain_ad_prod|upper }}
 realmd_tags = manages-system joined-with-samba
 cache_credentials = True
 id_provider = ad
@@ -16,4 +16,4 @@ ldap_id_mapping = True
 use_fully_qualified_names = False
 fallback_homedir = /home/%u@%d
 access_provider = ad
-{{ ad_access_filter }}
+{{ ad_access_filter_prod }}

@@ -1,0 +1,16 @@
+---
+# handlers file for add_centos7_to_ad
+- name: Restart service sshd
+  service:
+    name: sshd
+    state: restarted
+
+- name: Restart network centos
+  service:
+    name: network
+    state: restarted
+  
+- name: Restart sssd centos
+  service:
+    name: network
+    state: restarted
