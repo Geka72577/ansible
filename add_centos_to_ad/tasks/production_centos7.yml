@@ -5,8 +5,7 @@
     line: 'supersede domain-name-servers {{ DNS1_prod }}, {{ DNS2_prod }};'
     state: present
   when: (DNS1_prod is defined) and (DNS2_prod is defined)
-  notify: 
-    - Restart network centos
+  register: out_dhcp_file
 
 - name: Ensure that the variable PEERDNS set "yes" in ifcfg-{{ ansible_default_ipv4.interface }}   
   lineinfile:
@@ -14,16 +13,15 @@
     regexp: '^PEERDNS'
     line: PEERDNS=yes
     state: present
-  notify: 
-    - Restart network centos
+  register: out_ifcfg_file
 
 - name: Restart network centos
   systemd:
     name: network
     state: restarted
     daemon_reload: yes
-  register: output_network
- 
+  when: ( out_dhcp_file.changed == true ) or ( out_ifcfg_file.changed == true ) 
+
 - name: Install packages 
   yum:
     name: ['sssd', 'realmd', 'krb5-workstation', 'samba-common-tools']
@@ -84,6 +82,3 @@
 - debug:
     msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} wasn't added to AD successfully in production"
   when: finish_result.rc != 0
-
-- debug: 
-    var: output_network 

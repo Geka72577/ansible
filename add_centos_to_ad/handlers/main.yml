@@ -6,12 +6,6 @@
     state: restarted
     daemon_reload: yes
 
-- name: Restart network centos
-  systemd:
-    name: network
-    state: restarted
-    daemon_reload: yes
-  
 - name: Restart sssd centos
   systemd:
     name: sssd
