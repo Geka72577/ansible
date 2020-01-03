@@ -1,16 +1,19 @@
 ---
 # handlers file for add_centos7_to_ad
-- name: Restart service sshd
-  service:
+- name: Restart sshd centos
+  systemd:
     name: sshd
     state: restarted
+    daemon_reload: yes
 
 - name: Restart network centos
-  service:
+  systemd:
     name: network
     state: restarted
+    daemon_reload: yes
   
 - name: Restart sssd centos
-  service:
-    name: network
+  systemd:
+    name: sssd
     state: restarted
+    daemon_reload: yes

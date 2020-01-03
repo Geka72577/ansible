@@ -48,6 +48,14 @@
       - Restart sssd centos
   when: result.rc != 0
 
+- name: Generate sudoers file for Centos
+  template:
+    src: sudoers_qa.j2
+    dest: /etc/sudoers.d/sudoers_ad
+    owner: root
+    group: root
+    mode: '0440'
+
 - name: Set the PasswordAuthentication setting to yes in ssh config
   lineinfile:
     path: '/etc/ssh/sshd_config'
@@ -55,21 +63,7 @@
     line:  'PasswordAuthentication yes'
     state: present
   notify: 
-    - Restart service sshd
-
-- name: Add comment to sudoers file and  validate with saving
-  lineinfile:
-    path: /etc/sudoers
-    state: present
-    line: '## Add the "AWS Delegated Administrators" group from the {{ domain_ad_qa }} domain.'
-    validate: /usr/sbin/visudo -cf %s
-
-- name: Add permissions for AD users and validate savings
-  lineinfile:
-    path: /etc/sudoers
-    state: present
-    line: "{{ group_ad_qa }}"
-    validate: /usr/sbin/visudo -cf %s
+    - Restart sshd centos
 
 - name: Check if the host was added to AD
   command: id {{ user_ad }}@{{ domain_ad_qa }}
@@ -77,9 +71,9 @@
   ignore_errors: yes
 
 - debug:
-    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} was added to rnd AD successfully"
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} was added to AD successfully in RND"
   when: finish_result.rc == 0
 
 - debug:
-    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} wasn't added to rnd AD successfully"
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} wasn't added to AD successfully in RND"
   when: finish_result.rc != 0
