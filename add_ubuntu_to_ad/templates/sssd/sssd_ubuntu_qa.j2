@@ -1,0 +1,19 @@
+
+[sssd]
+domains = {{ domain_ad_qa }}
+config_file_version = 2
+services = nss, pam
+
+[domain/{{ domain_ad_qa }}]
+ad_domain = {{ domain_ad_qa }}
+krb5_realm = {{ domain_ad_qa|upper }}
+realmd_tags = manages-system joined-with-samba
+cache_credentials = True
+id_provider = ad
+krb5_store_password_if_offline = True
+default_shell = /bin/bash
+ldap_id_mapping = True
+use_fully_qualified_names = False
+fallback_homedir = /home/%u@%d
+access_provider = ad
+{{ ad_access_filter_qa }}

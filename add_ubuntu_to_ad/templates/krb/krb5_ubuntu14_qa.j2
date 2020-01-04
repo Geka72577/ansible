@@ -1,5 +1,5 @@
 [libdefaults]
-        default_realm = {{ DOMAIN_AD }}
+        default_realm = {{ domain_ad_qa|upper }}
         rdns = false
 # The following krb5.conf variables are only for MIT Kerberos.
         krb4_config = /etc/krb.conf

@@ -1,0 +1,135 @@
+- name: Install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop: "{{ package_for_install_ubuntu }}"
+
+- block:
+  - name: Ensure that DNS1_prod and DNS2_prod set in dhclient.conf file
+    lineinfile:
+      path: /etc/dhcp/dhclient.conf
+      regexp: 'supersede domain-name'
+      line: 'supersede domain-name-servers {{ DNS1_prod }}, {{ DNS2_prod }};'
+    register: output_ubuntu_dns12
+    when: (DNS1_prod is defined) and (DNS2_prod is defined)
+    
+  - name: Restart network interface
+    shell: "ifdown {{ ansible_default_ipv4.interface }} && ifup {{ ansible_default_ipv4.interface }}"
+    when: output_ubuntu_dns12.changed == true
+  when: ansible_distribution_version == "16.04" or ansible_distribution_version == "14.04"
+
+- block:
+  - name: Upgrade netplan.io package to the latest version on Ubuntu 18.04
+    apt:
+     name: netplan.io
+     state: latest
+     update_cache: yes
+   
+  - name: Create a file named /etc/netplan/99-custom-dns.yaml for Ubuntu 18.04 with DNS1_prod and DNS2_prod
+    template:
+      src: dns/99-custom-dns_prod.yaml
+      dest: /etc/netplan/99-custom-dns.yaml
+      owner: root
+      group: root
+      mode: '0644'
+      force: yes
+    register: output_ubuntu18_dns12
+    when: (DNS1_prod is defined) and (DNS2_prod is defined)
+ 
+  - name: Apply the changes in network for Ubuntu 18.04
+    command: netplan apply
+    when: output_ubuntu18_dns12.changed == true
+  when: ansible_distribution_version == "18.04"
+  
+- name: Check if the instance in the Active Directory
+  command: id {{ user_ad }}@{{ domain_ad_prod }}
+  register: result
+  ignore_errors: yes
+  
+- block:
+  - name: Generate settings for krb.conf, Ubuntu 14.04
+    template:
+      src: krb/krb5_ubuntu14_prod.j2
+      dest: /etc/krb5.conf
+      owner: root
+      group: root
+      mode: '0644'
+      force: yes
+    when: ansible_distribution_version == "14.04"
+        
+  - name: Generate settings for krb.conf, Ubuntu 16.04
+    template:
+      src: krb/krb5_ubuntu16_prod.j2
+      dest: /etc/krb5.conf
+      owner: root
+      group: root
+      mode: '0644'
+      force: yes
+    when: ansible_distribution_version == "16.04"
+
+  - name: Generate settings for krb.conf, Ubuntu 18.04
+    template:
+      src: krb/krb5_ubuntu18_prod.j2
+      dest: /etc/krb5.conf
+      owner: root
+      group: root
+      mode: '0644'
+      force: yes
+    when: ansible_distribution_version == "18.04"
+
+  - name: Join the instance to the Active Directory
+    shell: echo '{{ user_ad_password }}' | realm join -U {{ user_ad }}@{{ domain_ad_prod|upper }} {{ domain_ad_prod }} --verbose
+    register: output
+
+  - name: Result of joining
+    debug:
+      var: output.stderr
+
+  - name: Generate SSSD file for Ubuntu
+    template:
+      src: sssd/sssd_ubuntu_prod.j2
+      dest: /etc/sssd/sssd.conf
+      owner: root
+      group: root
+      mode: '0600'
+      force: yes
+    notify:
+      - Restart sssd Ubuntu
+  when: result.rc != 0
+ 
+- name: Generate sudoers file for Ubuntu
+  template:
+    src: sudoers/sudoers_prod.j2
+    dest: /etc/sudoers.d/sudoers_ad
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: Set the PasswordAuthentication setting to yes in ssh config
+  lineinfile:
+    path: '/etc/ssh/sshd_config'
+    regexp: '^PasswordAuthentication'
+    line:  'PasswordAuthentication yes'
+    state: present
+  notify:
+    - Restart ssh Ubuntu
+ 
+- name: Add permission to create home directory
+  lineinfile:
+    path: /etc/pam.d/common-session
+    line: 'session required pam_mkhomedir.so skel=/etc/skel/ umask=0077'
+    state: present
+
+- name: Check if the host was added to AD
+  command: id {{ user_ad }}@{{ domain_ad_prod }}
+  register: finish_result
+  ignore_errors: yes
+
+- debug:
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} was added to AD successfully"
+  when: finish_result.rc == 0
+
+- debug:
+    msg:  "RESULT: Host {{ ansible_hostname }} with {{ ansible_default_ipv4.address }} wasn't added to AD successfully"
+  when: finish_result.rc != 0

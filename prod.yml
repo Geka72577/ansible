@@ -18,5 +18,5 @@
 #          3735316335356430610a326532386631326530393266373666326330303865393338626333343236
 #          3035
   roles:
-      -  add_centos_to_ad
-#     -  add_ubuntu_to_add
+       -  add_centos_to_ad
+       -  add_ubuntu_to_ad

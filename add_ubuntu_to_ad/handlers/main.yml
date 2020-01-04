@@ -1,0 +1,10 @@
+---
+- name: Restart ssh Ubuntu
+  service:
+    name: ssh
+    state: restarted
+
+- name: Restart sssd Ubuntu
+  service:
+    name: sssd
+    state: restarted

@@ -1,0 +1,8 @@
+---
+- name: Add host to the production AD - Ubuntu 14,16 
+  include_tasks: "production_ubuntu.yml"
+  when: (aws_environment == "Prod" and ansible_distribution == "Ubuntu" and (ansible_distribution_major_version == "14" or ansible_distribution_major_version == "16" or ansible_distribution_major_version == "18"))
+
+- name: Add host to RND AD - Ubuntu 14,16
+  include_tasks: "qa_ubuntu.yml"
+  when: (aws_environment == "QA" and ansible_distribution == "Ubuntu" and (ansible_distribution_major_version == "14" or ansible_distribution_major_version == "16" or ansible_distribution_major_version == "18"))

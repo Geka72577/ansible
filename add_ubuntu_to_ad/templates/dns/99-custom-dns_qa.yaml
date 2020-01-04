@@ -1,8 +1,8 @@
 network:
     version: 2
     ethernets:
-        {{ output_ubuntu_interface.stdout }}:
+        {{ ansible_default_ipv4.interface }}:         
             nameservers:
-                    addresses: [{{ DNS2 }}]
+                    addresses: [{{ DNS1_qa }}, {{ DNS2_qa }}]
             dhcp4-overrides:
                     use-dns: false

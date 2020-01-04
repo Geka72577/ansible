@@ -1,8 +1,0 @@
-network:
-    version: 2
-    ethernets:
-        {{ output_ubuntu_interface.stdout }}:
-            nameservers:
-                    addresses: [{{ DNS1 }}]
-            dhcp4-overrides:
-                    use-dns: false
